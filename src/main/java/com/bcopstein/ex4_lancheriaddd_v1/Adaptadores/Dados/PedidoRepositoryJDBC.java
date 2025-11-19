@@ -1,7 +1,6 @@
 package com.bcopstein.ex4_lancheriaddd_v1.Adaptadores.Dados;
 
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -63,21 +62,34 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
     }
 
     @Override
+    public double gastoTotalClienteUltimosDias(String cpf, int dias) {
+        String sql = "SELECT COALESCE(SUM(valor_cobrado),0) FROM pedidos WHERE cliente_cpf = ? AND data_hora_pagamento >= ?";
+        java.time.LocalDate cutoff = java.time.LocalDate.now().minusDays(dias);
+        java.sql.Timestamp cutoffTs = java.sql.Timestamp.valueOf(cutoff.atStartOfDay());
+        Double soma = jdbcTemplate.queryForObject(sql, new Object[]{cpf, cutoffTs}, Double.class);
+        return (soma != null) ? soma.doubleValue() : 0.0;
+    }
+
+    @Override
     public Pedido recuperaPorId(long id) {
-        String sql = "SELECT status, data_hora_pagamento FROM pedidos WHERE id = ?";
+        String sql = "SELECT status, data_hora_pagamento, valor, impostos, desconto, valor_cobrado FROM pedidos WHERE id = ?";
 
         return jdbcTemplate.query(sql, rs -> {
             try {
                 if (rs.next()) {
                     Pedido.Status status = Pedido.Status.valueOf(rs.getString("status"));
                     java.sql.Timestamp timestamp = rs.getTimestamp("data_hora_pagamento");
+                    double valor = rs.getDouble("valor");
+                    double impostos = rs.getDouble("impostos");
+                    double desconto = rs.getDouble("desconto");
+                    double valorCobrado = rs.getDouble("valor_cobrado");
                     Pedido pedido = new Pedido(
                             id,
                             null,
                             timestamp != null ? timestamp.toLocalDateTime() : null,
                             null,
                             status,
-                            0, 0, 0, 0
+                            valor, impostos, desconto, valorCobrado
                     );
                     return pedido;
                 }

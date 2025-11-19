@@ -15,6 +15,8 @@ public interface PedidoRepository {
 
     int nroPedidosCliente(String cpf);
 
+    double gastoTotalClienteUltimosDias(String cpf, int dias);
+
     List<Pedido> listarPedidosEntregues(LocalDateTime dataInicio, LocalDateTime dataFim);
 
     List<Pedido> listarPedidos();
